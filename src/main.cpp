@@ -1,5 +1,10 @@
 #include <Arduino.h>
 
+//                                         D
+constexpr uint8_t PEDESTRIAN_BUTTON_PIN  = 5;
+constexpr uint8_t MAINTENANCE_BUTTON_PIN = 6;
+constexpr uint8_t EMERGENCY_BUTTON_PIN   = 7;
+
 //                                 D
 constexpr uint8_t YELLOW_LED_PIN = 2;
 constexpr uint8_t RED_LED_PIN    = 3;
@@ -20,6 +25,10 @@ constexpr unsigned long INTERVAL = 1000;
 void setup() {
     Serial.begin(115200);
 
+    pinMode(PEDESTRIAN_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(MAINTENANCE_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(EMERGENCY_BUTTON_PIN, INPUT_PULLUP);
+
     pinMode(YELLOW_LED_PIN, OUTPUT);
     pinMode(RED_LED_PIN, OUTPUT);
     pinMode(GREEN_LED_PIN, OUTPUT);
@@ -28,6 +37,19 @@ void setup() {
 }
 
 void loop() {
+
+    if (digitalRead(PEDESTRIAN_BUTTON_PIN) == LOW) {
+        Serial.println("[BUTTON] D5");
+    }
+
+    if (digitalRead(MAINTENANCE_BUTTON_PIN) == LOW) {
+        Serial.println("[BUTTON] D6");
+    }
+
+    if (digitalRead(EMERGENCY_BUTTON_PIN) == LOW) {
+        Serial.println("[BUTTON] D7");
+    }
+
     unsigned long currentMillis = millis();
 
     if (currentMillis - previousMillis >= INTERVAL) {
@@ -38,7 +60,7 @@ void loop() {
             digitalWrite(YELLOW_LED_PIN, LOW);
             digitalWrite(GREEN_LED_PIN, LOW);
 
-            Serial.println("RED");
+            // Serial.println("RED");
 
             currentState = TrafficState::Green;
             break;
@@ -48,7 +70,7 @@ void loop() {
             digitalWrite(YELLOW_LED_PIN, LOW);
             digitalWrite(GREEN_LED_PIN, HIGH);
 
-            Serial.println("GREEN");
+            // Serial.println("GREEN");
 
             currentState = TrafficState::Yellow;
             break;
@@ -58,10 +80,10 @@ void loop() {
             digitalWrite(YELLOW_LED_PIN, HIGH);
             digitalWrite(GREEN_LED_PIN, LOW);
 
-            Serial.println("YELLOW");
+            // Serial.println("YELLOW");
 
             currentState = TrafficState::Red;
             break;
         }
-    }
+    }   
 }
