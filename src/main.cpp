@@ -1,46 +1,67 @@
 #include <Arduino.h>
-#include "Led.h"
 
-namespace { // D2-D3-D4
-    LED yellowLED(2);
-    LED redLED(3);
-    LED greenLED(4);    
+//                                 D
+constexpr uint8_t YELLOW_LED_PIN = 2;
+constexpr uint8_t RED_LED_PIN    = 3;
+constexpr uint8_t GREEN_LED_PIN  = 4;
 
-    void disableAllLEDs() {
-        yellowLED.off();
-        redLED.off();
-        greenLED.off();
-    }
-}
+enum class TrafficState
+{
+    Red,
+    Yellow,
+    Green
+};
+
+TrafficState currentState = TrafficState::Red;
+
+unsigned long previousMillis = 0;
+constexpr unsigned long INTERVAL = 1000;
 
 void setup() {
     Serial.begin(115200);
 
-    Serial.println("Booting...");
+    pinMode(YELLOW_LED_PIN, OUTPUT);
+    pinMode(RED_LED_PIN, OUTPUT);
+    pinMode(GREEN_LED_PIN, OUTPUT);
 
-    yellowLED.begin();
-    redLED.begin();
-    greenLED.begin();
-
-    disableAllLEDs();
+    Serial.println("Traffic Controller Booting...");
 }
 
 void loop() {
-    yellowLED.on();
-    redLED.off();
-    greenLED.off();
-    delay(500);
+    unsigned long currentMillis = millis();
 
-    yellowLED.off();
-    redLED.on();
-    greenLED.off();
-    delay(500);
+    if (currentMillis - previousMillis >= INTERVAL) {
+        previousMillis = currentMillis;
+        switch (currentState) {
+        case TrafficState::Red:
+            digitalWrite(RED_LED_PIN, HIGH);
+            digitalWrite(YELLOW_LED_PIN, LOW);
+            digitalWrite(GREEN_LED_PIN, LOW);
 
-    yellowLED.off();
-    redLED.off();
-    greenLED.on();
-    delay(500);
+            Serial.println("RED");
 
-    disableAllLEDs();
-    delay(500);
+            currentState = TrafficState::Green;
+            break;
+
+        case TrafficState::Green:
+            digitalWrite(RED_LED_PIN, LOW);
+            digitalWrite(YELLOW_LED_PIN, LOW);
+            digitalWrite(GREEN_LED_PIN, HIGH);
+
+            Serial.println("GREEN");
+
+            currentState = TrafficState::Yellow;
+            break;
+
+        case TrafficState::Yellow:
+            digitalWrite(RED_LED_PIN, LOW);
+            digitalWrite(YELLOW_LED_PIN, HIGH);
+            digitalWrite(GREEN_LED_PIN, LOW);
+
+            Serial.println("YELLOW");
+
+            currentState = TrafficState::Red;
+            break;
+        }
+    }
 }
