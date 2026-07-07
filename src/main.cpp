@@ -10,17 +10,17 @@ constexpr uint8_t YELLOW_LED_PIN = 2;
 constexpr uint8_t RED_LED_PIN    = 3;
 constexpr uint8_t GREEN_LED_PIN  = 4;
 
-enum class TrafficState {
-    Red,
-    Yellow,
-    Green
+enum class ButtonMode {
+    Pedestrian,
+    Maintenance,
+    Emergency
 };
 
-TrafficState current_state = TrafficState::Red;
+ButtonMode current_mode = ButtonMode::Pedestrian;
 
-unsigned long previous_millis = 0;
-constexpr unsigned long INTERVAL = 1000;
 constexpr unsigned long DEBOUNCE_TIME = 50;
+constexpr unsigned long MAINTENANCE_INTERVAL = 500;
+constexpr unsigned long EMERGENCY_INTERVAL = 250;
 
 constexpr uint8_t NUM_BUTTONS = 3;
 const uint8_t BUTTON_PINS[NUM_BUTTONS] = {PEDESTRIAN_BUTTON_PIN, MAINTENANCE_BUTTON_PIN, EMERGENCY_BUTTON_PIN};
@@ -44,13 +44,22 @@ void poll_buttons() {
                 if (button_state[i] == LOW) {
                     Serial.print(BUTTON_NAMES[i]);
                     Serial.println(" pressed");
+                    if (i == 0) {
+                        current_mode = ButtonMode::Pedestrian;
+                        Serial.println("[MODE] Pedestrian");
+                    } else if (i == 1) {
+                        current_mode = ButtonMode::Maintenance;
+                        Serial.println("[MODE] Maintenance");
+                    } else if (i == 2) {
+                        current_mode = ButtonMode::Emergency;
+                        Serial.println("[MODE] Emergency");
+                    }
                 } else {
                     Serial.print(BUTTON_NAMES[i]);
                     Serial.println(" released");
                 }
             }
         }
-
         last_reading[i] = reading;
     }
 }
@@ -75,40 +84,31 @@ void setup() {
 void loop() {
     poll_buttons();
 
-    unsigned long current_millis = millis();
-
-    if (current_millis - previous_millis >= INTERVAL) {
-        previous_millis = current_millis;
-        switch (current_state) {
-        case TrafficState::Red:
+    if (current_mode == ButtonMode::Pedestrian) {
+        digitalWrite(RED_LED_PIN, LOW);
+        digitalWrite(YELLOW_LED_PIN, LOW);
+        digitalWrite(GREEN_LED_PIN, HIGH);
+        return;
+    } else if (current_mode == ButtonMode::Maintenance) {
+        unsigned long phase = millis() / MAINTENANCE_INTERVAL;
+        if (phase % 2 == 0) {
             digitalWrite(RED_LED_PIN, HIGH);
-            digitalWrite(YELLOW_LED_PIN, LOW);
-            digitalWrite(GREEN_LED_PIN, LOW);
-
-            Serial.println("[LED] RED");
-
-            current_state = TrafficState::Green;
-            break;
-
-        case TrafficState::Green:
-            digitalWrite(RED_LED_PIN, LOW);
-            digitalWrite(YELLOW_LED_PIN, LOW);
-            digitalWrite(GREEN_LED_PIN, HIGH);
-
-            Serial.println("[LED] GREEN");
-
-            current_state = TrafficState::Yellow;
-            break;
-
-        case TrafficState::Yellow:
-            digitalWrite(RED_LED_PIN, LOW);
             digitalWrite(YELLOW_LED_PIN, HIGH);
+            digitalWrite(GREEN_LED_PIN, HIGH);
+        } else {
+            digitalWrite(RED_LED_PIN, LOW);
+            digitalWrite(YELLOW_LED_PIN, LOW);
             digitalWrite(GREEN_LED_PIN, LOW);
-
-            Serial.println("[LED] YELLOW");
-
-            current_state = TrafficState::Red;
-            break;
         }
+    } else if (current_mode == ButtonMode::Emergency) {
+        unsigned long phase = millis() / EMERGENCY_INTERVAL;
+
+        if (phase % 2 == 0) {
+            digitalWrite(RED_LED_PIN, HIGH);
+        } else {
+            digitalWrite(RED_LED_PIN, LOW);
+        }
+        digitalWrite(YELLOW_LED_PIN, LOW);
+        digitalWrite(GREEN_LED_PIN, LOW);
     }
 }
